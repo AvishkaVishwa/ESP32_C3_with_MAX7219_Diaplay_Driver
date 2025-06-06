@@ -121,16 +121,4 @@ Component config → HTTP Server → HTTP Maximum Request Header Length
 
 ---
 
-### 📝 License
 
-This project is licensed under the MIT License.
-
----
-
-### 🤝 Contributing
-
-Contributions are welcome! Please fork this repo and submit a pull request.
-
----
-
-Let me know if you'd like to refine any section or add screenshots or links. 🚀
