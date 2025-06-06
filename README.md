@@ -1,7 +1,7 @@
 
 ---
 
-## 📱 ESP32-C3 Digital Clock with Web Interface
+## 📱 ESP32-C3 Digital Clock with Web Interface and MAX7219 Display Driver
 
 This project is a **web-controlled digital clock** using an **ESP32-C3**, a **MAX7219**-driven 6-digit 7-segment display, and a buzzer alarm. It includes:
 
