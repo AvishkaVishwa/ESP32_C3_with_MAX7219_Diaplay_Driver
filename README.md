@@ -117,7 +117,7 @@ Component config → HTTP Server → HTTP Maximum Request Header Length
 
 ### 📷 Screenshots
 
-*(Add screenshots here if you’d like!)*
+<img src ="assest\web_interface.png">
 
 ---
 
