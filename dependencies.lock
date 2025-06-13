@@ -1,0 +1,18 @@
+dependencies:
+  idf:
+    source:
+      type: idf
+    version: 5.4.1
+  zorxx/rtci2c:
+    component_hash: 17309b88bab4c866dae26634db8f3d8c4c8932be41f6dfddf11ab61be3cf7385
+    dependencies: []
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.3.0
+direct_dependencies:
+- idf
+- zorxx/rtci2c
+manifest_hash: fc061652e217c07958799321c02f62c7c811c8e17936cf8a9c4085e8ca05395e
+target: esp32c3
+version: 2.0.0

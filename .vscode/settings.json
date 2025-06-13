@@ -10,5 +10,8 @@
   "idf.customExtraVars": {
     "IDF_TARGET": "esp32c3"
   },
-  "idf.flashType": "UART"
+  "idf.flashType": "UART",
+  "files.associations": {
+    "i2c.h": "c"
+  }
 }
