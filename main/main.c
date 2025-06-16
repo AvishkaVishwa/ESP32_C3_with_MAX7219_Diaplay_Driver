@@ -56,6 +56,11 @@ static int alarm_hour = -1;
 static int alarm_minute = -1;
 static bool alarm_triggered = false;
 
+// Time tracking variables for interval notifications
+static int last_hour = -1;    // Track the previous hour
+static int last_minute = -1;  // Track the previous minute
+static int last_second = -1;  // Track previous second for LED blinking
+
 // Sri Lanka timezone (IST - UTC+5:30)
 static int timezone_hours = 5;    // Hours offset from UTC
 static int timezone_minutes = 30;  // Minutes offset
@@ -75,6 +80,8 @@ void start_periodic_ntp_sync(void);
 void wifi_reconnect_timer_callback(void* arg);
 void start_wifi_reconnect_timer(void);
 void reconnect_to_home_wifi(void);
+void single_beep(void);
+void double_beep(void);
 
 void max7219_send(uint8_t address, uint8_t data) {
     uint8_t tx_data[2] = {address, data};
@@ -114,15 +121,45 @@ void max7219_init() {
     }
 }
 
+// Single beep function
+void single_beep() {
+    gpio_set_level(BUZZER_PIN, 1);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    gpio_set_level(BUZZER_PIN, 0);
+}
+
+// Double beep function
+void double_beep() {
+    // First beep
+    gpio_set_level(BUZZER_PIN, 1);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    gpio_set_level(BUZZER_PIN, 0);
+    
+    // Pause between beeps
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    
+    // Second beep
+    gpio_set_level(BUZZER_PIN, 1);
+    vTaskDelay(200 / portTICK_PERIOD_MS);
+    gpio_set_level(BUZZER_PIN, 0);
+}
+
 void display_time(int hour, int minute, int second) {
+    // Convert to 12-hour format
+    bool is_pm = hour >= 12;
+    int display_hour = hour % 12;
+    if (display_hour == 0) display_hour = 12; // 0 hour in 12-hour format is 12 AM/PM
+    
     int digits[6] = {
-        hour / 10,
-        hour % 10,
+        display_hour / 10,
+        display_hour % 10,
         minute / 10,
         minute % 10,
         second / 10,
         second % 10
     };
+    
+    // Display time on 7-segment display
     for (int i = 0; i < 6; i++) {
         max7219_send(i + 1, digit_to_segment[digits[i]]);
     }
@@ -958,21 +995,23 @@ void wifi_init_softap() {
     // Load WiFi settings from NVS
     load_wifi_settings();
     
-    // Configure AP mode
+    // Configure AP mode with password
     wifi_config_t ap_config = {
         .ap = {
             .max_connection = 4,
-            .channel = 1
+            .channel = 1,
+            .authmode = WIFI_AUTH_WPA2_PSK,    // Secure the AP with WPA2
+            .password = "clockpass",           // Set default password (min 8 chars)
         }
     };
     
-    // Copy SSID and set length for AP mode - always use "Clock" for AP
+// Copy SSID and set length for AP mode - always use "Clock" for AP
     strlcpy((char*)ap_config.ap.ssid, "Clock", sizeof(ap_config.ap.ssid));
     ap_config.ap.ssid_len = strlen("Clock");
 
     // Set AP password to "1" (minimum 8 chars required for WPA2)
     // If you want WPA2, use at least 8 chars, e.g., "11111111"
-    strlcpy((char*)ap_config.ap.password, "11111111", sizeof(ap_config.ap.password));
+    strlcpy((char*)ap_config.ap.password, "1", sizeof(ap_config.ap.password));
     ap_config.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
     ap_config.ap.ssid_hidden = 0;
     ap_config.ap.max_connection = 4;
@@ -1098,7 +1137,6 @@ void app_main() {
     }
 
     // Main loop
-    int last_second = -1;  // Track previous second for LED blinking
     while (1) {
         time_t now;
         struct tm timeinfo;
@@ -1116,6 +1154,32 @@ void app_main() {
             last_second = timeinfo.tm_sec;
         }
 
+        // Check for time interval notifications (only when seconds = 0)
+        if (timeinfo.tm_sec == 0) {
+            // Check for hour change (at the top of each hour - XX:00:00)
+            if (timeinfo.tm_hour != last_hour && timeinfo.tm_min == 0) {
+                // Only if we're not already in an alarm state
+                if (!alarm_triggered) {
+                    ESP_LOGI(TAG, "Hour completed! Two beeps.");
+                    double_beep();
+                }
+            }
+            
+            // Check for half-hour (XX:30:00)
+            if (timeinfo.tm_min == 30 && timeinfo.tm_min != last_minute) {
+                // Only if we're not already in an alarm state
+                if (!alarm_triggered) {
+                    ESP_LOGI(TAG, "Half hour completed! One beep.");
+                    single_beep();
+                }
+            }
+        }
+        
+        // Update time tracking variables
+        last_hour = timeinfo.tm_hour;
+        last_minute = timeinfo.tm_min;
+
+        // Existing alarm checking code
         if (alarm_hour >= 0 && alarm_minute >= 0) {
             if (timeinfo.tm_hour == alarm_hour &&
                 timeinfo.tm_min == alarm_minute &&
