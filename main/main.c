@@ -2,6 +2,7 @@
 #include <string.h>
 #include <time.h>
 #include <sys/time.h>
+#include <stdlib.h>
 #include "esp_log.h"
 #include "esp_system.h"
 #include "esp_event.h"
@@ -16,19 +17,22 @@
 #include "esp_sntp.h"  // Use ESP-IDF's SNTP implementation
 #include "esp_timer.h" // For periodic timer
 
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
 #define TAG "CLOCK"
 
-// MAX7219 SPI configuration
-#define PIN_NUM_MOSI 6
-#define PIN_NUM_CLK  4
-#define PIN_NUM_CS   7
+// MAX7219 SPI configuration for ESP32-S3
+#define PIN_NUM_MOSI 11  // GPIO11 for MOSI (SPI data)
+#define PIN_NUM_CLK  12  // GPIO12 for SCK (SPI clock)
+#define PIN_NUM_CS   10  // GPIO10 for CS (chip select)
 
-// Buzzer pin and Dismiss button pin
-#define BUZZER_PIN   3
-#define DISMISS_BUTTON_PIN 9
-
-// LED pin for seconds indicator
-#define SECONDS_LED_PIN 10
+// Other pin configurations
+#define BUZZER_PIN   3   // Buzzer output
+#define DISMISS_BUTTON_PIN 9  // Button input
+#define SECONDS_LED_PIN 13    // LED indicator for seconds
+#define AMPM_LED_PIN   15     // LED for AM/PM indication
 
 // NTP sync interval in milliseconds (1 hour)
 #define NTP_SYNC_INTERVAL_MS 3600000
@@ -65,71 +69,132 @@ static int last_second = -1;  // Track previous second for LED blinking
 static int timezone_hours = 5;    // Hours offset from UTC
 static int timezone_minutes = 30;  // Minutes offset
 
-// WiFi settings
-static char wifi_ssid[32] = "";
-static char wifi_password[64] = "";
-static bool wifi_has_password = false;
+// WiFi settings - FIX: Default to empty values to prevent self-connection
+static char wifi_ssid[32] = "";  // Empty by default - will be set via web interface
+static char wifi_password[64] = "";  // Empty by default
+static bool wifi_has_password = false;  // Default to false since we have no default password
 static bool wifi_sta_connected = false;
 static int ap_client_count = 0;
 static bool reconnect_timer_active = false;
 static esp_timer_handle_t reconnect_timer = NULL;
 
-// Forward declarations for new functions
+// Forward declarations
+void max7219_send(uint8_t address, uint8_t data);
+void max7219_init(void);
+void single_beep(void);
+void double_beep(void);
+void display_time(int hour, int minute, int second);
+void time_sync_notification_cb(struct timeval *tv);
+void sync_time_with_ntp(void* pvParameters);
 void ntp_timer_callback(void* arg);
 void start_periodic_ntp_sync(void);
 void wifi_reconnect_timer_callback(void* arg);
 void start_wifi_reconnect_timer(void);
 void reconnect_to_home_wifi(void);
-void single_beep(void);
-void double_beep(void);
+void save_wifi_settings(void);
+void load_wifi_settings(void);
+httpd_handle_t start_webserver(void);
+void wifi_init_softap(void);
+static void wifi_event_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
+char hex_to_char(char first, char second);
+void url_decode(char *src, char *dest, size_t dest_size);
 
+// URL decoding helper functions for handling special characters in form data
+char hex_to_char(char first, char second) {
+    char hex[3] = {first, second, '\0'};
+    return (char)strtol(hex, NULL, 16);
+}
+
+void url_decode(char *src, char *dest, size_t dest_size) {
+    size_t i = 0, j = 0;
+    
+    while (src[i] && j < dest_size - 1) {
+        if (src[i] == '%' && src[i+1] && src[i+2]) {
+            dest[j++] = hex_to_char(src[i+1], src[i+2]);
+            i += 3;
+        } else if (src[i] == '+') {
+            dest[j++] = ' ';
+            i++;
+        } else {
+            dest[j++] = src[i++];
+        }
+    }
+    
+    dest[j] = '\0';
+}
+
+// SPI send function for MAX7219
 void max7219_send(uint8_t address, uint8_t data) {
     uint8_t tx_data[2] = {address, data};
     spi_transaction_t t = {
         .length = 16,
         .tx_buffer = tx_data
     };
-    spi_device_transmit(spi, &t);
+    esp_err_t ret = spi_device_transmit(spi, &t);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "SPI send failed: %s", esp_err_to_name(ret));
+    }
 }
 
-void max7219_init() {
+// Initialize MAX7219 display
+void max7219_init(void) {
+    ESP_LOGI(TAG, "Initializing SPI bus with MOSI:%d, CLK:%d, CS:%d", 
+              PIN_NUM_MOSI, PIN_NUM_CLK, PIN_NUM_CS);
+              
     spi_bus_config_t buscfg = {
         .mosi_io_num = PIN_NUM_MOSI,
         .sclk_io_num = PIN_NUM_CLK,
-        .miso_io_num = -1,
+        .miso_io_num = -1,  // We don't use MISO for the MAX7219
         .quadwp_io_num = -1,
-        .quadhd_io_num = -1
+        .quadhd_io_num = -1,
+        .max_transfer_sz = 32,  // Add explicit size for ESP32-S3
     };
-    spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);
+    
+    // Use SPI2_HOST for ESP32-S3
+    esp_err_t ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize SPI bus: %s", esp_err_to_name(ret));
+        return;
+    }
 
     spi_device_interface_config_t devcfg = {
         .clock_speed_hz = 10000000,
         .mode = 0,
         .spics_io_num = PIN_NUM_CS,
-        .queue_size = 7
+        .queue_size = 7,
+        .flags = 0,  // Add this for ESP32-S3 compatibility
     };
-    spi_bus_add_device(SPI2_HOST, &devcfg, &spi);
+    
+    ret = spi_bus_add_device(SPI2_HOST, &devcfg, &spi);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to add SPI device: %s", esp_err_to_name(ret));
+        return;
+    }
 
-    max7219_send(0x0F, 0x00);
-    max7219_send(0x0C, 0x01);
-    max7219_send(0x0B, 0x05);
-    max7219_send(0x0A, 0x0F);
-    max7219_send(0x09, 0x00);
-
+    // Initialize MAX7219
+    max7219_send(0x0F, 0x00);  // Display test register - normal operation
+    max7219_send(0x0C, 0x01);  // Shutdown register - normal operation
+    max7219_send(0x0B, 0x05);  // Scan limit register - display digits 0-5
+    max7219_send(0x0A, 0x0F);  // Intensity register - max brightness
+    max7219_send(0x09, 0x00);  // Decode mode register - no decode
+    
+    // Clear all digits
     for (int i = 1; i <= 6; i++) {
         max7219_send(i, 0x00);
     }
+    
+    ESP_LOGI(TAG, "MAX7219 initialized successfully");
 }
 
-// Single beep function
-void single_beep() {
+// Single beep function - implementation added to fix linker error
+void single_beep(void) {
     gpio_set_level(BUZZER_PIN, 1);
     vTaskDelay(200 / portTICK_PERIOD_MS);
     gpio_set_level(BUZZER_PIN, 0);
 }
 
 // Double beep function
-void double_beep() {
+void double_beep(void) {
     // First beep
     gpio_set_level(BUZZER_PIN, 1);
     vTaskDelay(200 / portTICK_PERIOD_MS);
@@ -144,6 +209,7 @@ void double_beep() {
     gpio_set_level(BUZZER_PIN, 0);
 }
 
+// Display time in 12-hour format
 void display_time(int hour, int minute, int second) {
     // Convert to 12-hour format
     bool is_pm = hour >= 12;
@@ -163,6 +229,9 @@ void display_time(int hour, int minute, int second) {
     for (int i = 0; i < 6; i++) {
         max7219_send(i + 1, digit_to_segment[digits[i]]);
     }
+    
+    // Use LED to indicate PM (ON for PM, OFF for AM)
+    gpio_set_level(AMPM_LED_PIN, is_pm ? 1 : 0);
 }
 
 // Time sync notification callback
@@ -305,7 +374,7 @@ void reconnect_to_home_wifi(void) {
 }
 
 // Functions to save and load WiFi settings from NVS
-void save_wifi_settings() {
+void save_wifi_settings(void) {
     nvs_handle_t my_handle;
     esp_err_t err = nvs_open("storage", NVS_READWRITE, &my_handle);
     if (err != ESP_OK) {
@@ -355,7 +424,7 @@ void save_wifi_settings() {
     ESP_LOGI(TAG, "WiFi, alarm and timezone settings saved to NVS");
 }
 
-void load_wifi_settings() {
+void load_wifi_settings(void) {
     nvs_handle_t my_handle;
     esp_err_t err = nvs_open("storage", NVS_READONLY, &my_handle);
     if (err != ESP_OK) {
@@ -423,7 +492,7 @@ void load_wifi_settings() {
         ESP_LOGI(TAG, "Loaded alarm time: %02d:%02d", alarm_hour, alarm_minute);
     }
     
-    // Fix for line 490 - pre-format the timezone string
+    // Pre-format the timezone string
     char tz_str[64]; // Increased buffer size to prevent truncation
     snprintf(tz_str, sizeof(tz_str), "UTC%+d:%02d", timezone_hours, timezone_minutes);
     ESP_LOGI(TAG, "Loaded timezone: %s", tz_str);
@@ -484,7 +553,7 @@ esp_err_t get_handler(httpd_req_t *req) {
         "</style>"
         "</head>"
         "<body>"
-        "<h1>ESP32-C3 Clock</h1>");
+        "<h1>ESP32-S3 Clock</h1>");
 
     // Send dynamic content in chunks
     char chunk[512];
@@ -594,6 +663,13 @@ esp_err_t get_handler(httpd_req_t *req) {
 
     // Send empty chunk to signal end of response
     httpd_resp_sendstr_chunk(req, NULL);
+    return ESP_OK;
+}
+
+// Handler for /meta.json to prevent 404 errors
+esp_err_t meta_json_handler(httpd_req_t *req) {
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_sendstr(req, "{}");
     return ESP_OK;
 }
 
@@ -752,31 +828,45 @@ esp_err_t dismiss_post_handler(httpd_req_t *req) {
 }
 
 esp_err_t setwifi_post_handler(httpd_req_t *req) {
-    char buf[256];
-    int ret, remaining = req->content_len;
-    
-    // Buffer to collect request data
-    if (remaining >= sizeof(buf)) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Content too long");
+    // Increase buffer size for form data
+    char *buf = malloc(1024);
+    if (buf == NULL) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Memory allocation failed");
         return ESP_FAIL;
     }
     
+    int remaining = req->content_len;
+    int received = 0;
+    
+    // Ensure we don't exceed buffer size
+    if (remaining >= 1024) {
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Content too long");
+        free(buf);
+        return ESP_FAIL;
+    }
+    
+    // Receive data in chunks if needed
+    int ret = 0;
     while (remaining > 0) {
-        if ((ret = httpd_req_recv(req, buf, MIN(remaining, sizeof(buf)))) <= 0) {
+        ret = httpd_req_recv(req, buf + received, remaining);
+        if (ret <= 0) {
             if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
                 continue;
             }
+            httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to receive data");
+            free(buf);
             return ESP_FAIL;
         }
+        received += ret;
         remaining -= ret;
     }
-    buf[req->content_len] = '\0';
+    buf[received] = '\0';
     
     // Parse form data
     char new_ssid[32] = {0};
     char new_password[64] = {0};
     
-    // Simple parsing (you might want to use a more robust method)
+    // Simple parsing
     char *ssid_start = strstr(buf, "ssid=");
     char *pass_start = strstr(buf, "password=");
     
@@ -794,29 +884,33 @@ esp_err_t setwifi_post_handler(httpd_req_t *req) {
             strlcpy(new_ssid, ssid_start, sizeof(new_ssid));
         }
         
-        // URL-decode the SSID
-        for (int i = 0; i < strlen(new_ssid); i++) {
-            if (new_ssid[i] == '+') {
-                new_ssid[i] = ' ';
-            }
-        }
+        // Use the new URL decoder
+        char decoded_ssid[32] = {0};
+        url_decode(new_ssid, decoded_ssid, sizeof(decoded_ssid));
+        strlcpy(new_ssid, decoded_ssid, sizeof(new_ssid));
     }
     
     if (pass_start) {
         pass_start += 9; // Skip "password="
-        // URL-decode and copy the password
+        
+        // Copy the password
         strlcpy(new_password, pass_start, sizeof(new_password));
         
-        // URL-decode the password
-        for (int i = 0; i < strlen(new_password); i++) {
-            if (new_password[i] == '+') {
-                new_password[i] = ' ';
-            }
-        }
+        // Use the new URL decoder
+        char decoded_password[64] = {0};
+        url_decode(new_password, decoded_password, sizeof(decoded_password));
+        strlcpy(new_password, decoded_password, sizeof(new_password));
     }
     
     // Update WiFi settings if SSID is provided
     if (strlen(new_ssid) > 0) {
+        // Prevent setting the SSID to "Clock" (our own AP name)
+        if (strcmp(new_ssid, "Clock") == 0) {
+            httpd_resp_sendstr(req, "Error: Cannot set home WiFi to 'Clock' as this would create a loop.");
+            free(buf);
+            return ESP_OK;
+        }
+        
         strlcpy(wifi_ssid, new_ssid, sizeof(wifi_ssid));
         strlcpy(wifi_password, new_password, sizeof(wifi_password));
         wifi_has_password = (strlen(new_password) >= 8);
@@ -828,13 +922,14 @@ esp_err_t setwifi_post_handler(httpd_req_t *req) {
         httpd_resp_sendstr(req, "WiFi settings updated. The device will restart in 5 seconds...");
         
         // Schedule a restart
-        ESP_LOGI(TAG, "WiFi settings changed. Restarting in 5 seconds...");
+        ESP_LOGI(TAG, "WiFi settings changed to SSID: %s. Restarting in 5 seconds...", wifi_ssid);
         vTaskDelay(5000 / portTICK_PERIOD_MS);
         esp_restart();
-        return ESP_OK;
+    } else {
+        httpd_resp_sendstr(req, "Error: SSID is required");
     }
     
-    httpd_resp_sendstr(req, "Error: SSID is required");
+    free(buf);
     return ESP_OK;
 }
 
@@ -867,13 +962,29 @@ esp_err_t syncntp_post_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
-httpd_handle_t start_webserver() {
-    // Increase stack size to prevent stack overflow
+httpd_handle_t start_webserver(void) {
+    // Increase buffer sizes to prevent "header too long" errors
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.stack_size = 8192;  // Double the default stack size
+    config.stack_size = 8192;         // Double the default stack size
+    config.max_uri_handlers = 10;     // Increase handler count
+    config.max_resp_headers = 8;      // Increase max response headers
+    config.recv_wait_timeout = 30;    // Longer timeout for slow clients
+    config.send_wait_timeout = 30;
+    
+    // IMPORTANT: Increase these values to handle larger form submissions
+    config.uri_match_fn = httpd_uri_match_wildcard; // More flexible URI matching
+    config.max_open_sockets = 7;      // Allow more concurrent connections
+    // config.max_header_len = 1024;  // Removed: not a member of httpd_config_t
+    // config.max_uri_len = 128;      // Removed: not a member of httpd_config_t
+    // config.max_resp_len = 1024;    // Removed: not a member of httpd_config_t
+    config.max_resp_headers = 8;      // Increase number of response headers
     
     httpd_handle_t server = NULL;
-    httpd_start(&server, &config);
+    esp_err_t ret = httpd_start(&server, &config);
+    if (ret != ESP_OK) {
+        ESP_LOGE(TAG, "Error starting server: %s", esp_err_to_name(ret));
+        return NULL;
+    }
 
     httpd_uri_t get_uri = {
         .uri = "/",
@@ -881,6 +992,14 @@ httpd_handle_t start_webserver() {
         .handler = get_handler
     };
     httpd_register_uri_handler(server, &get_uri);
+
+    // Add handler for /meta.json to prevent 404 errors
+    httpd_uri_t meta_json_uri = {
+        .uri = "/meta.json",
+        .method = HTTP_GET,
+        .handler = meta_json_handler
+    };
+    httpd_register_uri_handler(server, &meta_json_uri);
 
     httpd_uri_t settime_post_uri = {
         .uri = "/settime",
@@ -931,6 +1050,7 @@ httpd_handle_t start_webserver() {
     };
     httpd_register_uri_handler(server, &syncntp_post_uri);
 
+    ESP_LOGI(TAG, "Web server started successfully");
     return server;
 }
 
@@ -948,7 +1068,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             ESP_LOGI(TAG, "Disconnected from home WiFi network");
             
             // Only attempt to reconnect if no AP clients and not already trying to reconnect
-            if (ap_client_count == 0 && !reconnect_timer_active) {
+            if (ap_client_count == 0 && !reconnect_timer_active && strlen(wifi_ssid) > 0) {
                 start_wifi_reconnect_timer();
             }
         } else if (event_id == WIFI_EVENT_AP_STACONNECTED) {
@@ -969,7 +1089,7 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
             ESP_LOGI(TAG, "Station disconnected from AP");
             
             // If no clients connected to AP, reconnect to home WiFi after a delay
-            if (ap_client_count == 0 && !reconnect_timer_active) {
+            if (ap_client_count == 0 && !reconnect_timer_active && strlen(wifi_ssid) > 0) {
                 start_wifi_reconnect_timer();
             }
         }
@@ -984,46 +1104,41 @@ static void wifi_event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-void wifi_init_softap() {
+void wifi_init_softap(void) {
     // Create default event loop
     esp_netif_t *ap_netif __attribute__((unused)) = esp_netif_create_default_wifi_ap();
     esp_netif_t *sta_netif __attribute__((unused)) = esp_netif_create_default_wifi_sta();
     
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-    esp_wifi_init(&cfg);
+    ESP_ERROR_CHECK(esp_wifi_init(&cfg));
     
     // Load WiFi settings from NVS
     load_wifi_settings();
     
-    // Configure AP mode with password
+    // Configure AP mode with password (must be at least 8 characters for WPA2)
     wifi_config_t ap_config = {
         .ap = {
             .max_connection = 4,
             .channel = 1,
-            .authmode = WIFI_AUTH_WPA2_PSK,    // Secure the AP with WPA2
-            .password = "clockpass",           // Set default password (min 8 chars)
+            .authmode = WIFI_AUTH_WPA2_PSK,
+            .ssid_hidden = 0,
         }
     };
     
-// Copy SSID and set length for AP mode - always use "Clock" for AP
+    // Copy SSID and set length for AP mode - always use "Clock" for AP
     strlcpy((char*)ap_config.ap.ssid, "Clock", sizeof(ap_config.ap.ssid));
     ap_config.ap.ssid_len = strlen("Clock");
 
-    // Set AP password to "1" (minimum 8 chars required for WPA2)
-    // If you want WPA2, use at least 8 chars, e.g., "11111111"
-    strlcpy((char*)ap_config.ap.password, "1", sizeof(ap_config.ap.password));
-    ap_config.ap.authmode = WIFI_AUTH_WPA_WPA2_PSK;
-    ap_config.ap.ssid_hidden = 0;
-    ap_config.ap.max_connection = 4;
-
-    // First, just set up AP mode
-    esp_wifi_set_mode(WIFI_MODE_AP);
-    esp_wifi_set_config(WIFI_IF_AP, &ap_config);
-
-    esp_wifi_start();
+    // Set AP password (must be at least 8 chars for WPA2)
+    strlcpy((char*)ap_config.ap.password, "clockpass", sizeof(ap_config.ap.password));
+    
+    // Set up AP mode
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_config));
+    ESP_ERROR_CHECK(esp_wifi_start());
 
     ESP_LOGI(TAG, "WiFi AP started with SSID: Clock");
-    ESP_LOGI(TAG, "WiFi AP security: WPA/WPA2-PSK, password: %s", ap_config.ap.password);
+    ESP_LOGI(TAG, "WiFi AP security: WPA2-PSK, password: %s", ap_config.ap.password);
 
     // If we have home WiFi credentials, try to connect after a delay
     if (strlen(wifi_ssid) > 0 && wifi_has_password) {
@@ -1032,7 +1147,7 @@ void wifi_init_softap() {
     }
 }
 
-void app_main() {
+void app_main(void) {
     // Initialize NVS flash
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
@@ -1040,6 +1155,27 @@ void app_main() {
         ret = nvs_flash_init();
     }
     ESP_ERROR_CHECK(ret);
+    
+    ESP_LOGI(TAG, "Starting ESP32-S3 Clock application");
+    
+    // Reset saved WiFi settings if needed to prevent self-connection
+    nvs_handle_t my_handle;
+    esp_err_t err = nvs_open("storage", NVS_READWRITE, &my_handle);
+    if (err == ESP_OK) {
+        // Check if SSID is "Clock" and if so, clear it
+        size_t required_size = sizeof(wifi_ssid);
+        char temp_ssid[32] = {0};
+        if (nvs_get_str(my_handle, "wifi_ssid", temp_ssid, &required_size) == ESP_OK) {
+            if (strcmp(temp_ssid, "Clock") == 0) {
+                ESP_LOGI(TAG, "Found 'Clock' as saved WiFi SSID - clearing to prevent self-connection");
+                nvs_erase_key(my_handle, "wifi_ssid");
+                nvs_erase_key(my_handle, "wifi_pass");
+                nvs_erase_key(my_handle, "wifi_has_pass");
+                nvs_commit(my_handle);
+            }
+        }
+        nvs_close(my_handle);
+    }
     
     esp_netif_init();
     esp_event_loop_create_default();
@@ -1098,6 +1234,16 @@ void app_main() {
     };
     gpio_config(&seconds_led_conf);
 
+    // Configure AM/PM indicator LED pin
+    gpio_config_t ampm_led_conf = {
+        .pin_bit_mask = (1ULL << AMPM_LED_PIN),
+        .mode = GPIO_MODE_OUTPUT,
+        .pull_up_en = 0,
+        .pull_down_en = 0,
+        .intr_type = GPIO_INTR_DISABLE
+    };
+    gpio_config(&ampm_led_conf);
+
     // Set timezone for Sri Lanka
     char tz_str[32];
     if (timezone_minutes == 0) {
@@ -1136,6 +1282,8 @@ void app_main() {
         ESP_LOGI(TAG, "Set initial time to 2025-06-13 10:15:51");
     }
 
+    ESP_LOGI(TAG, "Clock initialized and running");
+    
     // Main loop
     while (1) {
         time_t now;
@@ -1200,6 +1348,6 @@ void app_main() {
             ESP_LOGI(TAG, "Alarm dismissed by button.");
         }
 
-        vTaskDelay(pdMS_TO_TICKS(100)); // Check more frequently to ensure responsive LED blinking
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }

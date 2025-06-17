@@ -3,12 +3,12 @@
   "idf.espIdfPathWin": "C:\\Users\\micro\\esp\\v5.4\\esp-idf",
   "idf.pythonInstallPath": "C:\\Users\\micro\\.espressif\\tools\\idf-python\\3.11.2\\python.exe",
   "idf.openOcdConfigs": [
-    "board/esp32c3-builtin.cfg"
+    "board/esp32s3-builtin.cfg"
   ],
-  "idf.portWin": "COM8",
+  "idf.portWin": "COM23",
   "idf.toolsPathWin": "C:\\Users\\micro\\.espressif",
   "idf.customExtraVars": {
-    "IDF_TARGET": "esp32c3"
+    "IDF_TARGET": "esp32s3"
   },
   "idf.flashType": "UART",
   "files.associations": {
