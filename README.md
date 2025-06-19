@@ -41,82 +41,106 @@ This project is a **web-controlled digital clock** using an **ESP32-C3**, a **MA
 
 ---
 
-### 📌 Pin Connections
 
-| ESP32-C3 Pin | Description                   |
-| ------------ | ----------------------------- |
-| GPIO2        | SPI MOSI to MAX7219 DIN       |
-| GPIO4        | SPI SCK to MAX7219 CLK        |
-| GPIO5        | SPI CS to MAX7219 CS          |
-| GPIO6        | Buzzer                        |
-| GPIO7        | Dismiss Button (with pull-up) |
+## 🖼️ Sneak Peek
+
+| Web UI                                                | PCB Render                                         |
+| ----------------------------------------------------- | -------------------------------------------------- |
+| <img src="E:\Clock\clcok\assest\2.png" width="320"> | <img src="E:\Clock\clcok\Hardware\3d.png" width="320"> |
+                                                      | <img src="E:\Clock\clcok\Hardware\3d2.png" width="320"> |
+---
+
+## 📐 PCB Design Gallery
+
+| View              | Snapshot                                           | Notes                                                                                 |
+| ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| **Top copper**    | <img src="/Hardware/zone.png" width="320">    | High‑speed SPI and control lines kept short; ground pour stitched with plenty of vias |
+| **Bottom copper** | <img src="/Hardware/B_CU.png" width="320"> | Almost‑solid GND plane with 5 V return path and a few low‑speed signals               |
+| **3‑D render**    | <img src="/Hardware/3d3.png" width="320"> | Compact 90 × 30 mm, ESP32‑C3 left, MAX7219 centre, LM2596 buck right                  |
 
 ---
 
-### 🚀 Getting Started
 
-1️⃣ Clone this repo:
+## 📌 Pin Map (default firmware)
+
+| ESP32‑C3 Pin | Purpose        | MAX7219 | Notes                |
+| ------------ | -------------- | ------- | -------------------- |
+| **GPIO2**    | SPI MOSI       | DIN     |                      |
+| **GPIO4**    | SPI CLK        | CLK     |                      |
+| **GPIO5**    | SPI CS         | CS      | Can be any free GPIO |
+| **GPIO6**    | Buzzer         | –       | Active‑high          |
+| **GPIO7**    | Dismiss button | –       | Pulled‑up internally |
+
+> ℹ️ All pins are configurable in **`idf.py menuconfig ▸ Clock ▸ GPIO Map`**.
+
+---
+
+## 🗺️ System Block Diagram
+
+```
+      ┌────────────┐  SPI  ┌───────────────┐    ┌──────────────┐
+      │  ESP32‑C3  ├──────►│   MAX7219     ├────►  6 × 7‑SEG   │
+      │            │       └───────────────┘    └──────────────┘
+      │  Wi‑Fi AP  │
+      │  HTTP srv  │─────┐          ┌─────────┐
+      │  OTA srv   │     └─REST/SSE─► Browser │
+      │            │                 └─────────┘
+      ├────────────┤
+      │  Buzzer 6  │◄────────────────────────────── Alarm ISR
+      │  Button 7  │─────────────────┐
+      └────────────┘                 └ Debounced GPIO
+```
+
+---
+
+## 🚀 Quick Start
 
 ```bash
-git clone https://github.com/<your-username>/esp32-c3-clock.git
+# 1 · Clone & init IDF project
+$ git clone https://github.com/AvishkaVishwa/esp32-c3-clock.git
+$ cd esp32-c3-clock/firmware
+$ idf.py set-target esp32c3
+
+# 2 · Configure Wi‑Fi country code / timezone / pins
+$ idf.py menuconfig
+
+# 3 · Build, flash & monitor
+$ idf.py build flash monitor
 ```
 
-2️⃣ Open the project in **ESP-IDF**.
-
-3️⃣ Connect your **ESP32-C3**.
-
-4️⃣ Build and flash:
-
-```bash
-idf.py build flash monitor
-```
-
-5️⃣ Connect to the Wi-Fi network:
-
-```
-SSID: ESP32-C3-Clock
-Password: (open network)
-```
-
-6️⃣ Open your browser and navigate to:
-
-```
-http://192.168.4.1/
-```
+After first boot the device creates an **open AP** named `ESP32‑C3‑Clock`. Connect, browse to `http://192.168.4.1`, and set the current time & your alarms.
 
 ---
 
-### 🌐 Web Interface
+## 🛠️ Advanced Configuration
 
-* **Set Time**: Choose hours, minutes, and seconds, then click “Set Time”.
-* **Set Alarm**: Choose hours and minutes, then click “Set Alarm”.
-* **Dismiss Alarm**: Click “Dismiss Alarm” to stop the buzzer.
-
----
-
-### 🛠️ Configuration
-
-Use **menuconfig** to configure the HTTP server buffer size if needed:
-
-```
-Component config → HTTP Server → HTTP Maximum Request Header Length
-```
-
-(recommended: 1024 bytes)
+| Setting                | `menuconfig` Path         | Default          |
+| ---------------------- | ------------------------- | ---------------- |
+| Timezone               | `Clock ▸ Time`            | `Asia/Colombo`   |
+| AP SSID                | `Clock ▸ Wi‑Fi`           | `ESP32‑C3‑Clock` |
+| Alarm 1                | `Clock ▸ Alarms`          | `07:00`          |
+| HTTP max header length | `Component ▸ HTTP Server` | 1024 bytes       |
 
 ---
 
-### 💡 Notes
+## 🧭 Roadmap
 
-* The project uses the **ESP-IDF HTTP server**.
-* Inline CSS is used to keep the page lightweight.
-* The current time is displayed dynamically on the web interface.
+* [ ] Auto‑dim LED using ADC LDR sensor
+* [ ] BLE companion app
+* [ ] CR1220 RTC backup + DS3231 driver
+* [ ] Multi‑alarm support with weekdays
+
+> Want to help? Check out [open issues](https://github.com/AvishkaVishwa/esp32-c3-clock/issues) and start hacking!
 
 ---
 
-### 📷 Screenshots
+## 🤝 Contributing
 
-<img src ="assest\web_interface.png">
+1. Fork & create your branch: `git checkout -b feat/cool‑feature`
+2. Commit with **Conventional Commits**.
+3. Push & open a PR – GitHub Actions will run lint & build checks.
+
+Even typo fixes are appreciated ✨
 
 ---
 

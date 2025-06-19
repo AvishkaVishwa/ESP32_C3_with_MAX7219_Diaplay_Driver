@@ -512,7 +512,7 @@
       "plot": "../../Clock_greber/",
       "pos_files": "",
       "specctra_dsn": "",
-      "step": "",
+      "step": "clock.step",
       "svg": "",
       "vrml": ""
     },
