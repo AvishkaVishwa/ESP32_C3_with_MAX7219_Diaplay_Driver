@@ -46,7 +46,7 @@ This project is a **web-controlled digital clock** using an **ESP32-C3**, a **MA
 
 | Web UI                                                | PCB Render                                         |
 | ----------------------------------------------------- | -------------------------------------------------- |
-| <img src="/assest/1.png" width="320">                 | <img src="E:\Clock\clcok\Hardware\3d.png" width="320"> |
+| <img src="/assest/1.png" width="320">                 | <img src="/Hardware/3d3.png" width="320"> |
                                                       
 ## 📐 PCB Design Gallery
 
