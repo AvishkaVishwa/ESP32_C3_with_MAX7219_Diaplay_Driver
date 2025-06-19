@@ -121,13 +121,6 @@ After first boot the device creates an **open AP** named `ESP32‑C3‑Clock`. C
 
 ---
 
-## 🧭 Roadmap
-
-* [ ] Auto‑dim LED using ADC LDR sensor
-* [ ] BLE companion app
-* [ ] CR1220 RTC backup + DS3231 driver
-* [ ] Multi‑alarm support with weekdays
-
 > Want to help? Check out [open issues](https://github.com/AvishkaVishwa/esp32-c3-clock/issues) and start hacking!
 
 ---
