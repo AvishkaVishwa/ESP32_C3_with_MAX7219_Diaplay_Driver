@@ -46,13 +46,11 @@ This project is a **web-controlled digital clock** using an **ESP32-C3**, a **MA
 
 | Web UI                                                | PCB Render                                         |
 | ----------------------------------------------------- | -------------------------------------------------- |
-| <img src="E:\Clock\clcok\assest\2.png" width="320"> | <img src="E:\Clock\clcok\Hardware\3d.png" width="320"> |
-                                                      | <img src="E:\Clock\clcok\Hardware\3d2.png" width="320"> |
----
-
+| <img src="/assest/1.png" width="320">                 | <img src="E:\Clock\clcok\Hardware\3d.png" width="320"> |
+                                                      
 ## 📐 PCB Design Gallery
 
-| View              | Snapshot                                           | Notes                                                                                 |
+| View              | Snapshot                                         | Notes                                                                                 |
 | ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | **Top copper**    | <img src="/Hardware/zone.png" width="320">    | High‑speed SPI and control lines kept short; ground pour stitched with plenty of vias |
 | **Bottom copper** | <img src="/Hardware/B_CU.png" width="320"> | Almost‑solid GND plane with 5 V return path and a few low‑speed signals               |
