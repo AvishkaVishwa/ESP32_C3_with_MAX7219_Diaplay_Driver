@@ -1,0 +1,27 @@
+Reference,Qty,Value,DNP,Exclude from BOM,Exclude from Board,Footprint,Datasheet
+C1,1,10uF,,,,Capacitor_SMD:CP_Elec_4x5.4,https://cdn.sparkfun.com/assets/8/a/4/a/5/Kemet_Capacitor_Datasheet.pdf
+"C2,C4,C6,C8,C10,C11,C12",7,100nF,,,,SparkFun-Capacitor:C_0805_2012Metric,https://cdn.sparkfun.com/assets/8/a/4/a/5/Kemet_Capacitor_Datasheet.pdf
+C3,1,680uF,,,,Capacitor_THT:C_Radial_D6.3mm_H7.0mm_P2.50mm,https://cdn.sparkfun.com/assets/8/a/4/a/5/Kemet_Capacitor_Datasheet.pdf
+C5,1,22uF,,,,SparkFun-Fuse:1206,https://cdn.sparkfun.com/assets/8/a/4/a/5/Kemet_Capacitor_Datasheet.pdf
+C7,1,22uF,,,,Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,https://cdn.sparkfun.com/assets/8/a/4/a/5/Kemet_Capacitor_Datasheet.pdf
+C9,1,220uF,,,,Capacitor_THT:C_Radial_D6.3mm_H5.0mm_P2.50mm,https://cdn.sparkfun.com/assets/8/a/4/a/5/Kemet_Capacitor_Datasheet.pdf
+"D1,D2",2,Red,,,,LED_THT:LED_D3.0mm,https://docs.broadcom.com/docs/AV02-0551EN
+D3,1,SS34,,,,Diode_SMD:D_SMA,https://www.vishay.com/docs/88751/ss32.pdf
+D4,1,SS24,,,,PCM_JLCPCB:D_SMA,https://wmsc.lcsc.com/wmsc/upload/file/pdf/v2/lcsc/2401290920_hongjiacheng-SS24_C7420362.pdf
+D5,1,LED,,,,SparkFun-LED:LED_0603_1608Metric,~
+J1,1,Barrel_Jack_Switch,,,,Connector_BarrelJack:BarrelJack_GCT_DCJ200-10-A_Horizontal,~
+J2,1,Conn_01x05_Pin,,,,Connector_PinHeader_2.54mm:PinHeader_1x05_P2.54mm_Vertical,~
+J3,1,Conn_02x03_Odd_Even,,,,Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical,~
+J4,1,Conn_01x02_Pin,,,,Connector_PinHeader_2.00mm:PinHeader_1x02_P2.00mm_Vertical,~
+J5,1,Conn_01x06_Pin,,,,Connector_PinSocket_2.54mm:PinSocket_1x06_P2.54mm_Vertical,~
+L1,1,L,,,,Inductor_SMD:L_12x12mm_H8mm,~
+"Q1,Q2",2,BC817,,,,Package_TO_SOT_SMD:SOT-23,https://www.onsemi.com/pub/Collateral/BC818-D.pdf
+"R1,R2,R3,R4",4,10kΩ,,,,PCM_JLCPCB:R_0805,https://www.lcsc.com/datasheet/lcsc_datasheet_2411221126_UNI-ROYAL-Uniroyal-Elec-0805W8F1002T5E_C17414.pdf
+R5,1,1.5k,,,,SparkFun-Resistor:R_0603_1608Metric,https://www.vishay.com/docs/20035/dcrcwe3.pdf
+"R6,R7",2,4.7k,,,,SparkFun-Resistor:R_0603_1608Metric,https://www.vishay.com/docs/20035/dcrcwe3.pdf
+SW1,1,PTH_RA_h7.5mm,,,,SparkFun-Switch:Push_PTH_RA_8-020_h7.5mm,~
+"U1,U2,U3,U5",4,SBC18-11EGWA,,,,Display_7Segment:SBC18-11SURKCGKWA,http://www.kingbrightusa.com/images/catalog/SPEC/SBC18-11EGWA.pdf
+U4,1,ESP32-WROOM-32,,,,RF_Module:ESP32-WROOM-32,https://www.espressif.com/sites/default/files/documentation/esp32-wroom-32_datasheet_en.pdf
+U6,1,MAX7221xNG,,,,Package_DIP:DIP-24_W7.62mm,https://datasheets.maximintegrated.com/en/ds/MAX7219-MAX7221.pdf
+U7,1,AMS1117-3.3,,,,Package_TO_SOT_SMD:SOT-223-3_TabPin2,http://www.advanced-monolithic.com/pdf/ds1117.pdf
+U8,1,LM2596S-5,,,,Package_TO_SOT_SMD:TO-263-5_TabPin3,http://www.ti.com/lit/ds/symlink/lm2596.pdf
