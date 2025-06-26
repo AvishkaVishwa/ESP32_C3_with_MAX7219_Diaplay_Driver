@@ -14,5 +14,5 @@ direct_dependencies:
 - idf
 - zorxx/rtci2c
 manifest_hash: fc061652e217c07958799321c02f62c7c811c8e17936cf8a9c4085e8ca05395e
-target: esp32s3
+target: esp32
 version: 2.0.0
