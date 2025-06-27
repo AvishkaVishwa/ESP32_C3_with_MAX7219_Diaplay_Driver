@@ -23,16 +23,41 @@
 
 #define TAG "CLOCK"
 
-// MAX7219 SPI configuration for ESP32-S3
-#define PIN_NUM_MOSI 11  // GPIO11 for MOSI (SPI data)
-#define PIN_NUM_CLK  12  // GPIO12 for SCK (SPI clock)
-#define PIN_NUM_CS   10  // GPIO10 for CS (chip select)
+/*
+ * ESP32 WROOM-32D Pin Assignments for Clock Project:
+ * 
+ * MAX7219 7-Segment Display:
+ * - VCC  -> 3.3V or 5V
+ * - GND  -> GND
+ * - DIN  -> GPIO23 (MOSI)
+ * - CS   -> GPIO5
+ * - CLK  -> GPIO18 (SCK)
+ * 
+ * Other Components:
+ * - Buzzer        -> GPIO4
+ * - Dismiss Button-> GPIO0 (BOOT button - built-in)
+ * - Seconds LED   -> GPIO2 (Built-in LED)
+ * - AM/PM LED     -> GPIO19
+ * 
+ * Notes:
+ * - GPIO0: Boot button (pulled up externally, LOW when pressed)
+ * - GPIO2: Built-in LED (some boards)
+ * - GPIO18/23: Standard SPI pins
+ * - GPIO4: Safe general purpose pin
+ * - GPIO5: Safe general purpose pin
+ * - GPIO19: Safe general purpose pin
+ */
 
-// Other pin configurations
-#define BUZZER_PIN   3   // Buzzer output
-#define DISMISS_BUTTON_PIN 9  // Button input
-#define SECONDS_LED_PIN 13    // LED indicator for seconds
-#define AMPM_LED_PIN   15     // LED for AM/PM indication
+// MAX7219 SPI configuration for ESP32 WROOM-32D
+#define PIN_NUM_MOSI 23  // GPIO23 for MOSI (SPI data) - Standard SPI MOSI
+#define PIN_NUM_CLK  18  // GPIO18 for SCK (SPI clock) - Standard SPI CLK
+#define PIN_NUM_CS   5   // GPIO5 for CS (chip select)
+
+// Other pin configurations for ESP32 WROOM-32D
+#define BUZZER_PIN   4   // GPIO4 - Buzzer output
+#define DISMISS_BUTTON_PIN 0  // GPIO0 (BOOT button) - Button input
+#define SECONDS_LED_PIN 2    // GPIO2 (Built-in LED) - LED indicator for seconds
+#define AMPM_LED_PIN   19    // GPIO19 - LED for AM/PM indication
 
 // NTP sync interval in milliseconds (1 hour)
 #define NTP_SYNC_INTERVAL_MS 3600000
@@ -65,6 +90,11 @@ static int last_hour = -1;    // Track the previous hour
 static int last_minute = -1;  // Track the previous minute
 static int last_second = -1;  // Track previous second for LED blinking
 
+// Button debouncing variables - ESP32 WROOM-32D specific
+static bool last_button_state = true;  // GPIO0 is pulled up, so true = not pressed
+static uint32_t last_button_change = 0;
+static const uint32_t DEBOUNCE_DELAY_MS = 100;  // Longer debounce for GPIO0
+
 // Sri Lanka timezone (IST - UTC+5:30)
 static int timezone_hours = 5;    // Hours offset from UTC
 static int timezone_minutes = 30;  // Minutes offset
@@ -81,6 +111,7 @@ static esp_timer_handle_t reconnect_timer = NULL;
 // Forward declarations
 void max7219_send(uint8_t address, uint8_t data);
 void max7219_init(void);
+void test_display(void);
 void single_beep(void);
 void double_beep(void);
 void display_time(int hour, int minute, int second);
@@ -147,41 +178,47 @@ void max7219_init(void) {
         .miso_io_num = -1,  // We don't use MISO for the MAX7219
         .quadwp_io_num = -1,
         .quadhd_io_num = -1,
-        .max_transfer_sz = 32,  // Add explicit size for ESP32-S3
+        .max_transfer_sz = 32,  // Explicit size
     };
     
-    // Use SPI2_HOST for ESP32-S3
-    esp_err_t ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);
+    // Use HSPI_HOST for ESP32 WROOM-32D (SPI2)
+    esp_err_t ret = spi_bus_initialize(HSPI_HOST, &buscfg, SPI_DMA_CH_AUTO);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize SPI bus: %s", esp_err_to_name(ret));
         return;
     }
 
     spi_device_interface_config_t devcfg = {
-        .clock_speed_hz = 10000000,
+        .clock_speed_hz = 5000000,   // 5 MHz - reduced for better stability
         .mode = 0,
         .spics_io_num = PIN_NUM_CS,
         .queue_size = 7,
-        .flags = 0,  // Add this for ESP32-S3 compatibility
+        .flags = 0,
     };
     
-    ret = spi_bus_add_device(SPI2_HOST, &devcfg, &spi);
+    ret = spi_bus_add_device(HSPI_HOST, &devcfg, &spi);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to add SPI device: %s", esp_err_to_name(ret));
         return;
     }
 
-    // Initialize MAX7219
+    // Add small delay before initializing MAX7219
+    vTaskDelay(100 / portTICK_PERIOD_MS);
+
+    // Initialize MAX7219 with proper sequence
+    max7219_send(0x0C, 0x00);  // Shutdown register - shutdown mode first
     max7219_send(0x0F, 0x00);  // Display test register - normal operation
-    max7219_send(0x0C, 0x01);  // Shutdown register - normal operation
-    max7219_send(0x0B, 0x05);  // Scan limit register - display digits 0-5
-    max7219_send(0x0A, 0x0F);  // Intensity register - max brightness
     max7219_send(0x09, 0x00);  // Decode mode register - no decode
+    max7219_send(0x0B, 0x05);  // Scan limit register - display digits 0-5
+    max7219_send(0x0A, 0x08);  // Intensity register - medium brightness
     
     // Clear all digits
     for (int i = 1; i <= 6; i++) {
         max7219_send(i, 0x00);
     }
+    
+    // Enable normal operation
+    max7219_send(0x0C, 0x01);  // Shutdown register - normal operation
     
     ESP_LOGI(TAG, "MAX7219 initialized successfully");
 }
@@ -245,10 +282,12 @@ void sync_time_with_ntp(void* pvParameters) {
     
     // Set timezone for Sri Lanka (IST)
     char tz_str[32];
+    // POSIX timezone format: For UTC+5:30, we need to use negative offset in POSIX format
+    // POSIX uses the opposite sign: UTC+5:30 becomes IST-5:30
     if (timezone_minutes == 0) {
-        snprintf(tz_str, sizeof(tz_str), "UTC%+d", timezone_hours);
+        snprintf(tz_str, sizeof(tz_str), "IST-%d", timezone_hours);
     } else {
-        snprintf(tz_str, sizeof(tz_str), "UTC%+d:%02d", timezone_hours, timezone_minutes);
+        snprintf(tz_str, sizeof(tz_str), "IST-%d:%02d", timezone_hours, timezone_minutes);
     }
     setenv("TZ", tz_str, 1);
     tzset();
@@ -492,9 +531,9 @@ void load_wifi_settings(void) {
         ESP_LOGI(TAG, "Loaded alarm time: %02d:%02d", alarm_hour, alarm_minute);
     }
     
-    // Pre-format the timezone string
+    // Pre-format the timezone string for display
     char tz_str[64]; // Increased buffer size to prevent truncation
-    snprintf(tz_str, sizeof(tz_str), "UTC%+d:%02d", timezone_hours, timezone_minutes);
+    snprintf(tz_str, sizeof(tz_str), "UTC+%d:%02d", timezone_hours, timezone_minutes);
     ESP_LOGI(TAG, "Loaded timezone: %s", tz_str);
 }
 
@@ -553,7 +592,7 @@ esp_err_t get_handler(httpd_req_t *req) {
         "</style>"
         "</head>"
         "<body>"
-        "<h1>ESP32-S3 Clock</h1>");
+        "<h1>ESP32 WROOM-32D Clock</h1>");
 
     // Send dynamic content in chunks
     char chunk[512];
@@ -617,21 +656,21 @@ esp_err_t get_handler(httpd_req_t *req) {
         "<input type='submit' value='Set Timezone'>"
         "<p class='note'>Current setting: UTC");
 
-    snprintf(tz_chunk, sizeof(tz_chunk), "%+d:%02d</p></form>", timezone_hours, timezone_minutes);
+    snprintf(tz_chunk, sizeof(tz_chunk), "+%d:%02d</p></form>", timezone_hours, timezone_minutes);
     httpd_resp_sendstr_chunk(req, tz_chunk);
 
     // WiFi form - Break into smaller chunks to avoid buffer overflow
     httpd_resp_sendstr_chunk(req, 
         "<h2>WiFi Settings</h2>"
-        "<form action='/setwifi' method='post'>"
+        "<form action='/setwifi' method='post' accept-charset='UTF-8'>"
         "<p>The clock creates its own 'Clock' network for configuration, but can also connect to your home WiFi for internet time sync.</p>"
         "<fieldset>"
         "<legend>Home WiFi Connection</legend>");
 
     // Format just the input fields with dynamic values
     snprintf(chunk, sizeof(chunk), 
-        "Network Name: <input type='text' name='ssid' value='%s'><br><br>"
-        "Password: <input type='password' name='password' placeholder='WiFi password'><br>",
+        "Network Name: <input type='text' name='ssid' value='%s' maxlength='31'><br><br>"
+        "Password: <input type='password' name='password' placeholder='WiFi password' maxlength='63'><br>",
         wifi_ssid);
     httpd_resp_sendstr_chunk(req, chunk);
 
@@ -687,16 +726,19 @@ esp_err_t settime_post_handler(httpd_req_t *req) {
     int hour = 0, minute = 0, second = 0;
     sscanf(buf, "hour=%d&minute=%d&second=%d", &hour, &minute, &second);
 
-    struct tm timeinfo = {
-        .tm_year = 125, // 2025 - 1900
-        .tm_mon = 5,    // June (0-based)
-        .tm_mday = 13,
-        .tm_hour = hour,
-        .tm_min = minute,
-        .tm_sec = second
-    };
-    time_t now = mktime(&timeinfo);
-    struct timeval tv = {.tv_sec = now};
+    // Get current date and time, then update only the time portion
+    time_t current_time;
+    struct tm timeinfo;
+    time(&current_time);
+    localtime_r(&current_time, &timeinfo);
+    
+    // Update only the time fields, keep the current date
+    timeinfo.tm_hour = hour;
+    timeinfo.tm_min = minute;
+    timeinfo.tm_sec = second;
+    
+    time_t new_time = mktime(&timeinfo);
+    struct timeval tv = {.tv_sec = new_time};
     settimeofday(&tv, NULL);
 
     ESP_LOGI(TAG, "Time set to %02d:%02d:%02d", hour, minute, second);
@@ -799,12 +841,13 @@ esp_err_t settz_post_handler(httpd_req_t *req) {
         // Save to NVS
         save_wifi_settings();
         
-        // Set timezone
+        // Set timezone - POSIX format for proper timezone handling
         char tz_str[32];
+        // POSIX timezone format: For UTC+5:30, we need IST-5:30
         if (timezone_minutes == 0) {
-            snprintf(tz_str, sizeof(tz_str), "UTC%+d", timezone_hours);
+            snprintf(tz_str, sizeof(tz_str), "IST-%d", timezone_hours);
         } else {
-            snprintf(tz_str, sizeof(tz_str), "UTC%+d:%02d", timezone_hours, timezone_minutes);
+            snprintf(tz_str, sizeof(tz_str), "IST-%d:%02d", timezone_hours, timezone_minutes);
         }
         setenv("TZ", tz_str, 1);
         tzset();
@@ -828,9 +871,11 @@ esp_err_t dismiss_post_handler(httpd_req_t *req) {
 }
 
 esp_err_t setwifi_post_handler(httpd_req_t *req) {
-    // Increase buffer size for form data
-    char *buf = malloc(1024);
+    // Increase buffer size for form data and handle larger requests
+    const size_t buf_size = 2048;  // Increased buffer size
+    char *buf = malloc(buf_size);
     if (buf == NULL) {
+        ESP_LOGE(TAG, "Failed to allocate memory for WiFi form data");
         httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Memory allocation failed");
         return ESP_FAIL;
     }
@@ -838,9 +883,12 @@ esp_err_t setwifi_post_handler(httpd_req_t *req) {
     int remaining = req->content_len;
     int received = 0;
     
+    ESP_LOGI(TAG, "Receiving WiFi form data, content length: %d", remaining);
+    
     // Ensure we don't exceed buffer size
-    if (remaining >= 1024) {
-        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Content too long");
+    if (remaining >= buf_size) {
+        ESP_LOGE(TAG, "Content too long: %d bytes (max: %zu)", remaining, buf_size - 1);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Form data too long");
         free(buf);
         return ESP_FAIL;
     }
@@ -848,25 +896,33 @@ esp_err_t setwifi_post_handler(httpd_req_t *req) {
     // Receive data in chunks if needed
     int ret = 0;
     while (remaining > 0) {
-        ret = httpd_req_recv(req, buf + received, remaining);
+        int chunk_size = MIN(remaining, 512);  // Receive in smaller chunks
+        ret = httpd_req_recv(req, buf + received, chunk_size);
         if (ret <= 0) {
             if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
+                ESP_LOGW(TAG, "Timeout receiving data, retrying...");
                 continue;
             }
+            ESP_LOGE(TAG, "Failed to receive form data: %d", ret);
             httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Failed to receive data");
             free(buf);
             return ESP_FAIL;
         }
         received += ret;
         remaining -= ret;
+        ESP_LOGD(TAG, "Received %d bytes, %d remaining", ret, remaining);
     }
     buf[received] = '\0';
+    
+    ESP_LOGI(TAG, "Successfully received %d bytes of form data", received);
     
     // Parse form data
     char new_ssid[32] = {0};
     char new_password[64] = {0};
     
-    // Simple parsing
+    ESP_LOGD(TAG, "Form data received: %s", buf);  // Debug log (will be filtered unless debug level enabled)
+    
+    // Simple parsing with better error handling
     char *ssid_start = strstr(buf, "ssid=");
     char *pass_start = strstr(buf, "password=");
     
@@ -884,10 +940,11 @@ esp_err_t setwifi_post_handler(httpd_req_t *req) {
             strlcpy(new_ssid, ssid_start, sizeof(new_ssid));
         }
         
-        // Use the new URL decoder
+        // Use the URL decoder
         char decoded_ssid[32] = {0};
         url_decode(new_ssid, decoded_ssid, sizeof(decoded_ssid));
         strlcpy(new_ssid, decoded_ssid, sizeof(new_ssid));
+        ESP_LOGI(TAG, "Parsed SSID: %s", new_ssid);
     }
     
     if (pass_start) {
@@ -896,10 +953,11 @@ esp_err_t setwifi_post_handler(httpd_req_t *req) {
         // Copy the password
         strlcpy(new_password, pass_start, sizeof(new_password));
         
-        // Use the new URL decoder
+        // Use the URL decoder
         char decoded_password[64] = {0};
         url_decode(new_password, decoded_password, sizeof(decoded_password));
         strlcpy(new_password, decoded_password, sizeof(new_password));
+        ESP_LOGI(TAG, "Password received (length: %d)", strlen(new_password));
     }
     
     // Update WiFi settings if SSID is provided
@@ -965,19 +1023,17 @@ esp_err_t syncntp_post_handler(httpd_req_t *req) {
 httpd_handle_t start_webserver(void) {
     // Increase buffer sizes to prevent "header too long" errors
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.stack_size = 8192;         // Double the default stack size
-    config.max_uri_handlers = 10;     // Increase handler count
-    config.max_resp_headers = 8;      // Increase max response headers
-    config.recv_wait_timeout = 30;    // Longer timeout for slow clients
-    config.send_wait_timeout = 30;
+    config.stack_size = 16384;        // Quadruple the default stack size (4KB -> 16KB)
+    config.max_uri_handlers = 15;     // Increase handler count
+    config.max_resp_headers = 12;     // Increase max response headers
+    config.recv_wait_timeout = 60;    // Longer timeout for slow clients
+    config.send_wait_timeout = 60;    // Longer send timeout
     
-    // IMPORTANT: Increase these values to handle larger form submissions
+    // IMPORTANT: Increase these values to handle larger form submissions and headers
     config.uri_match_fn = httpd_uri_match_wildcard; // More flexible URI matching
-    config.max_open_sockets = 7;      // Allow more concurrent connections
-    // config.max_header_len = 1024;  // Removed: not a member of httpd_config_t
-    // config.max_uri_len = 128;      // Removed: not a member of httpd_config_t
-    // config.max_resp_len = 1024;    // Removed: not a member of httpd_config_t
-    config.max_resp_headers = 8;      // Increase number of response headers
+    config.max_open_sockets = 4;      // Within ESP32 LWIP limits (max 7, 3 used internally = 4 available)
+    config.backlog_conn = 5;          // Increase backlog connections
+    config.lru_purge_enable = true;   // Enable LRU purge for better memory management
     
     httpd_handle_t server = NULL;
     esp_err_t ret = httpd_start(&server, &config);
@@ -1130,6 +1186,7 @@ void wifi_init_softap(void) {
     ap_config.ap.ssid_len = strlen("Clock");
 
     // Set AP password (must be at least 8 chars for WPA2)
+    // Change "clockpass" to your desired password (minimum 8 characters)
     strlcpy((char*)ap_config.ap.password, "clockpass", sizeof(ap_config.ap.password));
     
     // Set up AP mode
@@ -1156,7 +1213,7 @@ void app_main(void) {
     }
     ESP_ERROR_CHECK(ret);
     
-    ESP_LOGI(TAG, "Starting ESP32-S3 Clock application");
+    ESP_LOGI(TAG, "Starting ESP32 WROOM-32D Clock application");
     
     // Reset saved WiFi settings if needed to prevent self-connection
     nvs_handle_t my_handle;
@@ -1201,6 +1258,9 @@ void app_main(void) {
     // Initialize MAX7219 display
     max7219_init();
     
+    // Test the display (comment out after verification)
+    test_display();
+    
     // Start web server
     start_webserver();
 
@@ -1214,11 +1274,11 @@ void app_main(void) {
     };
     gpio_config(&buzzer_conf);
 
-    // Configure dismiss button
+    // Configure dismiss button (GPIO0 - BOOT button)
     gpio_config_t dismiss_button_conf = {
         .pin_bit_mask = (1ULL << DISMISS_BUTTON_PIN),
         .mode = GPIO_MODE_INPUT,
-        .pull_up_en = 1,
+        .pull_up_en = 1,  // GPIO0 has external pull-up
         .pull_down_en = 0,
         .intr_type = GPIO_INTR_DISABLE
     };
@@ -1244,19 +1304,21 @@ void app_main(void) {
     };
     gpio_config(&ampm_led_conf);
 
-    // Set timezone for Sri Lanka
+    // Set timezone for Sri Lanka using POSIX format
     char tz_str[32];
+    // POSIX timezone format: For UTC+5:30, we need IST-5:30
     if (timezone_minutes == 0) {
-        snprintf(tz_str, sizeof(tz_str), "UTC%+d", timezone_hours);
+        snprintf(tz_str, sizeof(tz_str), "IST-%d", timezone_hours);
     } else {
-        snprintf(tz_str, sizeof(tz_str), "UTC%+d:%02d", timezone_hours, timezone_minutes);
+        snprintf(tz_str, sizeof(tz_str), "IST-%d:%02d", timezone_hours, timezone_minutes);
     }
     setenv("TZ", tz_str, 1);
     tzset();
     
     // Pre-format timezone string to avoid truncation warning
     char log_tz_str[64];
-    snprintf(log_tz_str, sizeof(log_tz_str), "%s (Sri Lanka/IST)", tz_str);
+    snprintf(log_tz_str, sizeof(log_tz_str), "IST-%d:%02d (Sri Lanka/IST UTC+%d:%02d)", 
+             timezone_hours, timezone_minutes, timezone_hours, timezone_minutes);
     ESP_LOGI(TAG, "Timezone set to %s", log_tz_str);
 
     // Set initial time if not set
@@ -1265,21 +1327,21 @@ void app_main(void) {
     time(&now);
     localtime_r(&now, &timeinfo);
     
-    // If time is not set, set to the current time from the message
+    // If time is not set, set to a reasonable current time
     if (timeinfo.tm_year < (2020 - 1900)) {
-        // Set to 2025-06-13 10:15:51
+        // Set to current date from context (June 27, 2025) with default time
         struct tm default_time = {
             .tm_year = 125,  // 2025 - 1900
             .tm_mon = 5,     // June (0-based)
-            .tm_mday = 13,
-            .tm_hour = 10,
-            .tm_min = 15,
-            .tm_sec = 51
+            .tm_mday = 27,   // Updated to current date
+            .tm_hour = 12,   // Noon
+            .tm_min = 0,
+            .tm_sec = 0
         };
         time_t default_time_t = mktime(&default_time);
         struct timeval tv = { .tv_sec = default_time_t };
         settimeofday(&tv, NULL);
-        ESP_LOGI(TAG, "Set initial time to 2025-06-13 10:15:51");
+        ESP_LOGI(TAG, "Set initial time to 2025-06-27 12:00:00");
     }
 
     ESP_LOGI(TAG, "Clock initialized and running");
@@ -1292,6 +1354,21 @@ void app_main(void) {
         localtime_r(&now, &timeinfo);
 
         display_time(timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+
+        // Debug output every 10 seconds
+        static int debug_counter = 0;
+        if (debug_counter++ >= 100) { // Every 10 seconds (100 * 100ms)
+            ESP_LOGI(TAG, "Current time: %04d-%02d-%02d %02d:%02d:%02d",
+                    timeinfo.tm_year + 1900, timeinfo.tm_mon + 1, timeinfo.tm_mday,
+                    timeinfo.tm_hour, timeinfo.tm_min, timeinfo.tm_sec);
+            ESP_LOGI(TAG, "WiFi status - STA: %s, AP clients: %d", 
+                    wifi_sta_connected ? "connected" : "disconnected", ap_client_count);
+            if (alarm_hour >= 0 && alarm_minute >= 0) {
+                ESP_LOGI(TAG, "Alarm set for: %02d:%02d (triggered: %s)", 
+                        alarm_hour, alarm_minute, alarm_triggered ? "yes" : "no");
+            }
+            debug_counter = 0;
+        }
 
         // Blink LED on each second change
         if (timeinfo.tm_sec != last_second) {
@@ -1341,13 +1418,53 @@ void app_main(void) {
             }
         }
 
-        // Check dismiss button
-        if (gpio_get_level(DISMISS_BUTTON_PIN) == 0) {
-            gpio_set_level(BUZZER_PIN, 0);
-            alarm_triggered = false;
-            ESP_LOGI(TAG, "Alarm dismissed by button.");
+        // Check dismiss button with debouncing
+        bool current_button_state = gpio_get_level(DISMISS_BUTTON_PIN);
+        uint32_t current_time_ms = pdTICKS_TO_MS(xTaskGetTickCount());
+        
+        if (current_button_state != last_button_state) {
+            last_button_change = current_time_ms;
         }
+        
+        if ((current_time_ms - last_button_change) > DEBOUNCE_DELAY_MS) {
+            if (current_button_state == 0 && last_button_state == 1) {
+                // Button was just pressed (falling edge)
+                gpio_set_level(BUZZER_PIN, 0);
+                alarm_triggered = false;
+                ESP_LOGI(TAG, "Alarm dismissed by button.");
+            }
+        }
+        
+        last_button_state = current_button_state;
 
         vTaskDelay(pdMS_TO_TICKS(100));
     }
+}
+
+// Debug function to test MAX7219 display
+void test_display(void) {
+    ESP_LOGI(TAG, "Testing MAX7219 display...");
+    
+    // Test all segments
+    for (int digit = 1; digit <= 6; digit++) {
+        max7219_send(digit, 0xFF); // All segments on
+        vTaskDelay(200 / portTICK_PERIOD_MS);
+    }
+    
+    vTaskDelay(1000 / portTICK_PERIOD_MS);
+    
+    // Clear all digits
+    for (int digit = 1; digit <= 6; digit++) {
+        max7219_send(digit, 0x00);
+    }
+    
+    // Test individual digits
+    for (int i = 0; i <= 9; i++) {
+        for (int digit = 1; digit <= 6; digit++) {
+            max7219_send(digit, digit_to_segment[i]);
+        }
+        vTaskDelay(500 / portTICK_PERIOD_MS);
+    }
+    
+    ESP_LOGI(TAG, "Display test completed");
 }

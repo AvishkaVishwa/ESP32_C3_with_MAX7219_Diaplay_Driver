@@ -1023,7 +1023,7 @@
 			(remove_unused_layers no)
 			(net 42 "unconnected-(U5-CC-Pad5)")
 			(pinfunction "CC")
-			(pintype "input")
+			(pintype "input+no_connect")
 			(uuid "bd5e8c35-ba84-49f3-abf7-b3d69c112d84")
 		)
 		(pad "6" thru_hole circle
@@ -1056,7 +1056,7 @@
 			(remove_unused_layers no)
 			(net 34 "unconnected-(U5-DP-Pad8)")
 			(pinfunction "DP")
-			(pintype "input")
+			(pintype "input+no_connect")
 			(uuid "879579ad-267d-418c-872a-08cf25f411e8")
 		)
 		(pad "9" thru_hole circle
@@ -1976,7 +1976,7 @@
 			(remove_unused_layers no)
 			(net 17 "unconnected-(U1-CC-Pad5)")
 			(pinfunction "CC")
-			(pintype "input")
+			(pintype "input+no_connect")
 			(uuid "8a3fd680-bf4b-4ec2-98a1-ee9d3c316e7e")
 		)
 		(pad "6" thru_hole circle
@@ -2009,7 +2009,7 @@
 			(remove_unused_layers no)
 			(net 18 "unconnected-(U1-DP-Pad8)")
 			(pinfunction "DP")
-			(pintype "input")
+			(pintype "input+no_connect")
 			(uuid "f09decbf-36b7-40c4-a17e-ca335e2c2b7f")
 		)
 		(pad "9" thru_hole circle
@@ -2209,7 +2209,7 @@
 			(remove_unused_layers no)
 			(net 20 "unconnected-(U2-CC-Pad5)")
 			(pinfunction "CC")
-			(pintype "input")
+			(pintype "input+no_connect")
 			(uuid "edab0756-145f-4e01-bf1b-26b758ad52cc")
 		)
 		(pad "6" thru_hole circle
@@ -2242,7 +2242,7 @@
 			(remove_unused_layers no)
 			(net 19 "unconnected-(U2-DP-Pad8)")
 			(pinfunction "DP")
-			(pintype "input")
+			(pintype "input+no_connect")
 			(uuid "bc60c055-c05d-4f69-95c6-e2cba918d5bc")
 		)
 		(pad "9" thru_hole circle
@@ -2695,7 +2695,7 @@
 			(remove_unused_layers no)
 			(net 41 "unconnected-(U3-CC-Pad5)")
 			(pinfunction "CC")
-			(pintype "input")
+			(pintype "input+no_connect")
 			(uuid "6fcd0c2a-f016-4dec-ae43-fce2c917f3ff")
 		)
 		(pad "6" thru_hole circle
@@ -2728,7 +2728,7 @@
 			(remove_unused_layers no)
 			(net 23 "unconnected-(U3-DP-Pad8)")
 			(pinfunction "DP")
-			(pintype "input")
+			(pintype "input+no_connect")
 			(uuid "69eb813d-f36b-4532-893b-cd35c9b055ad")
 		)
 		(pad "9" thru_hole circle
@@ -7343,7 +7343,7 @@
 			(remove_unused_layers no)
 			(net 58 "unconnected-(U6-DIG_4-Pad3)")
 			(pinfunction "DIG_4")
-			(pintype "open_collector")
+			(pintype "open_collector+no_connect")
 			(uuid "bf535aaf-ec34-4ea5-81e5-5d260cd49fc6")
 		)
 		(pad "4" thru_hole circle
@@ -7365,7 +7365,7 @@
 			(remove_unused_layers no)
 			(net 56 "unconnected-(U6-DIG_6-Pad5)")
 			(pinfunction "DIG_6")
-			(pintype "open_collector")
+			(pintype "open_collector+no_connect")
 			(uuid "99393094-2c82-4738-9f5a-f0c141bf5278")
 		)
 		(pad "6" thru_hole circle
@@ -7398,7 +7398,7 @@
 			(remove_unused_layers no)
 			(net 55 "unconnected-(U6-DIG_7-Pad8)")
 			(pinfunction "DIG_7")
-			(pintype "open_collector")
+			(pintype "open_collector+no_connect")
 			(uuid "89c61efe-77b7-4810-b4b1-7b97e11add45")
 		)
 		(pad "9" thru_hole circle
@@ -7420,7 +7420,7 @@
 			(remove_unused_layers no)
 			(net 57 "unconnected-(U6-DIG_5-Pad10)")
 			(pinfunction "DIG_5")
-			(pintype "open_collector")
+			(pintype "open_collector+no_connect")
 			(uuid "9d66e7d0-4993-41f4-b611-029720bf5327")
 		)
 		(pad "11" thru_hole circle
@@ -7552,7 +7552,7 @@
 			(remove_unused_layers no)
 			(net 59 "unconnected-(U6-SEG_DP-Pad22)")
 			(pinfunction "SEG_DP")
-			(pintype "open_emitter")
+			(pintype "open_emitter+no_connect")
 			(uuid "c1bc4a7a-fc98-47d2-916e-ac96d32565df")
 		)
 		(pad "23" thru_hole circle
@@ -7574,7 +7574,7 @@
 			(remove_unused_layers no)
 			(net 54 "unconnected-(U6-DOUT-Pad24)")
 			(pinfunction "DOUT")
-			(pintype "output")
+			(pintype "output+no_connect")
 			(uuid "6e4c8893-fa5e-44b5-b201-2741a7898d9a")
 		)
 		(embedded_fonts no)

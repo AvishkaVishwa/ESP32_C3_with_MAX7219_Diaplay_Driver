@@ -3,7 +3,7 @@
 	(generator "eeschema")
 	(generator_version "9.0")
 	(uuid "1ff2a468-a5e0-4316-b62a-bd1e9ae7f68a")
-	(paper "A4")
+	(paper "A3")
 	(lib_symbols
 		(symbol "Connector:Barrel_Jack_Switch"
 			(pin_names
@@ -5945,6 +5945,10 @@
 		(uuid "f2e269fa-0e46-4b6a-862c-8c4bd3b1a207")
 	)
 	(no_connect
+		(at 166.37 87.63)
+		(uuid "06aba006-2fbf-4c9f-a35f-fa2cdfcaafcc")
+	)
+	(no_connect
 		(at 85.09 139.7)
 		(uuid "11b530b1-ac60-4a10-a367-2a63a09a92ef")
 	)
@@ -5955,6 +5959,10 @@
 	(no_connect
 		(at 85.09 134.62)
 		(uuid "1782699b-a0f2-46f6-a617-f2cb4cda0140")
+	)
+	(no_connect
+		(at 101.6 54.61)
+		(uuid "232ae7f6-503d-40e8-8610-a384fa9fddbe")
 	)
 	(no_connect
 		(at 85.09 109.22)
@@ -5969,20 +5977,56 @@
 		(uuid "2b4b090e-2fee-48e9-b281-befbb8505000")
 	)
 	(no_connect
+		(at 166.37 85.09)
+		(uuid "3c529c97-942e-489a-95ff-76c89035d63e")
+	)
+	(no_connect
 		(at 115.57 147.32)
 		(uuid "4252c319-85b1-48d6-ac84-2e8d8cae99a5")
+	)
+	(no_connect
+		(at 166.37 80.01)
+		(uuid "46275e8e-7070-4678-9f7f-a95b5a80aee4")
 	)
 	(no_connect
 		(at 115.57 144.78)
 		(uuid "4e9fc54c-3a78-4686-8c82-9a716b8e2387")
 	)
 	(no_connect
+		(at 166.37 64.77)
+		(uuid "665b83d0-c5f8-4972-bd29-664a7389b1b5")
+	)
+	(no_connect
+		(at 166.37 77.47)
+		(uuid "7b2bcf2a-c66a-49dc-a8c0-e636e4cf3f85")
+	)
+	(no_connect
 		(at 115.57 149.86)
 		(uuid "8323953a-9727-4e80-abfb-3d5c27ac4db7")
 	)
 	(no_connect
+		(at 35.56 54.61)
+		(uuid "84924dcc-41a5-419d-8ad1-227e7c40a5ea")
+	)
+	(no_connect
 		(at 85.09 142.24)
 		(uuid "97d5857b-e176-4797-88f7-dc329e3e9857")
+	)
+	(no_connect
+		(at 116.84 52.07)
+		(uuid "a0d4d5a3-df9c-4a2a-bf31-580e78768e6b")
+	)
+	(no_connect
+		(at 74.93 52.07)
+		(uuid "a6aa9544-8591-4554-b509-f8360a40b370")
+	)
+	(no_connect
+		(at 81.28 54.61)
+		(uuid "a96aaa75-de72-455d-a18d-34e2e21933af")
+	)
+	(no_connect
+		(at 96.52 52.07)
+		(uuid "c4a8c3f0-c6d0-4961-bcfa-07995b188fad")
 	)
 	(no_connect
 		(at 85.09 106.68)
@@ -5997,8 +6041,20 @@
 		(uuid "cb5044f3-0eb7-4702-9677-f972691d9c0a")
 	)
 	(no_connect
+		(at 166.37 82.55)
+		(uuid "cbb2ea08-7440-4edf-82bd-aec4afd1741e")
+	)
+	(no_connect
 		(at 118.11 111.76)
 		(uuid "d362dee6-9ebf-49f3-b116-c667c7776e1d")
+	)
+	(no_connect
+		(at 59.69 54.61)
+		(uuid "f0609328-e485-4a21-bbee-22cd7d5cf05a")
+	)
+	(no_connect
+		(at 50.8 52.07)
+		(uuid "ff9550c1-0b91-4863-809d-9ab45bbf273e")
 	)
 	(wire
 		(pts
