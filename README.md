@@ -54,7 +54,7 @@ So when we turned on the clock it takes 10 seconds to connect to the home wifi a
 | -------- | --------------------------------- | -------------------------- |
 | 1        | **ESP32‑WROOM‑32D** module        | 38‑pin, 4 MB flash         |
 | 1        | **MAX7219** 8‑digit driver        | Only digits 0‑5 used       |
-| 6        | 0.56 " 7‑segment (common cathode) | HHMMSS                     |
+| 6        | 1.25" 7‑segment (common cathode) | HHMMSS                     |
 | 1        | Piezo buzzer (3 V)                | GPIO 4                     |
 | 1        | Tact switch                       | Dismiss, GPIO 0            |
 | 2        | LEDs + 1 kΩ                       | Seconds (G2), AM/PM (G19)  |
