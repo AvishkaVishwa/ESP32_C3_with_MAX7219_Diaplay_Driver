@@ -116,15 +116,6 @@ First boot ➡ creates open AP `Clock` (pwd **clockpass**). Browse to **[http:/
 
 ---
 
-## 🛠️ Factory Test Routine
-
-```bash
-idf.py -DMODE=TEST flash monitor
-```
-
-Runs segment sweep, buzzer chirp, Wi‑Fi scan, and prints results in JSON—ideal before boxing.
-
----
 
 ## 🎉 Special Thanks to PCBWay
 
