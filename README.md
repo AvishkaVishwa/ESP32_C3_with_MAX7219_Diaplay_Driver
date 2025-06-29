@@ -1,6 +1,8 @@
 # ⏰ ESP32‑Powered Web Clock
 
-> Elegant Wi‑Fi digital clock with MAX7219 6‑digit display, buzzer alarm, and full web control.
+> Elegant Wi‑Fi digital clock with MAX7219 6‑digit display, buzzer alarm, and full web control. 
+
+I did this project to Improve my skills and knowledge in PCB designing and IOT developments.
 
 <p align="center">
   <img src="/assest/final.jpg" width="620" alt="Clock demo"/>
@@ -140,10 +142,6 @@ This project wouldn’t have been possible without their generous support. If yo
 🔗 [Visit PCBWay →](https://www.pcbway.com/)
 
 ---
-
-## 📜 License
-
-Released under the **MIT License** – see [`LICENSE`](LICENSE).
 
 ---
 
