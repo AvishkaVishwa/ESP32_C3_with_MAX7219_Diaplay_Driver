@@ -1,4 +1,4 @@
-# ⏰ ESP32‑Powered Web Clock
+# ⏰ ESP32‑Powered Smart Clock
 
 > Elegant Wi‑Fi digital clock with MAX7219 6‑digit display, buzzer alarm, and full web control. 
 
