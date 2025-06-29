@@ -118,16 +118,6 @@ Runs segment sweep, buzzer chirp, Wi‑Fi scan, and prints results in JSON—ide
 
 ---
 
-## 🤝 Contributing
-
-1. **Fork** → `git checkout -b feat/awesome`
-2. Commit using **Conventional Commits** (`feat:`, `fix:` …)
-3. Open PR, wait for **CI build** to go green.
-
-Even typo fixes are welcome!
-
----
-
 ## 🎉 Special Thanks to PCBWay
 
 
