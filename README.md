@@ -131,6 +131,7 @@ Runs segment sweep, buzzer chirp, Wi‑Fi scan, and prints results in JSON—ide
   <a href="https://www.pcbway.com/" target="_blank">
     <img src="https://github.com/AvishkaVishwa/12V-DC-Motor-Speed-Controller-PCB-Design-using-KiCAD/blob/0191b6e02eeb30e176867d2a93ebec854536829a/Images/pcbwaylogo.jpg" alt="PCBWay" width="200"/>
   </a>
+
 </p>
 
 I would like to give a huge shoutout and sincere thanks to **[PCBWay](https://www.pcbway.com/)** for sponsoring the PCB fabrication of this project!
