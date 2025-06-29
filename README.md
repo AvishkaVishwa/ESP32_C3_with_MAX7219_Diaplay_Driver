@@ -29,9 +29,9 @@
 
 ## 🖼️ Gallery
 
-| Web UI                                    | PCB 3‑D                                 | Top Copper                                  |
+| Web UI                                    | PCB 3‑D                                 | Copper                                  |
 | ----------------------------------------- | --------------------------------------- | ------------------------------------------- |
-| <img src="assets/web-ui.png" width="260"> | <img src="hardware/3d.png" width="260"> | <img src="hardware/top-cu.png" width="260"> |
+| <img src="assets/web-ui.png" width="260"> | <img src="/Hardware/3d3.png" width="260"> | <img src="/Hardware/B_CU.png" width="260"> |
 
 More in [**/assets**](assets) & [**/hardware**](hardware).
 
@@ -122,6 +122,24 @@ Runs segment sweep, buzzer chirp, Wi‑Fi scan, and prints results in JSON—ide
 3. Open PR, wait for **CI build** to go green.
 
 Even typo fixes are welcome!
+
+---
+
+## 🎉 Special Thanks to PCBWay
+
+<p align="center">
+  <a href="https://www.pcbway.com/" target="_blank">
+    <img src="https://github.com/AvishkaVishwa/12V-DC-Motor-Speed-Controller-PCB-Design-using-KiCAD/blob/0191b6e02eeb30e176867d2a93ebec854536829a/Images/pcbwaylogo.jpg" alt="PCBWay" width="200"/>
+  </a>
+</p>
+
+I would like to give a huge shoutout and sincere thanks to **[PCBWay](https://www.pcbway.com/)** for sponsoring the PCB fabrication of this project!
+
+The **build quality, silkscreen clarity, via precision, and copper finish** exceeded expectations. PCBWay’s service was fast, professional, and extremely helpful throughout the production process.
+
+This project wouldn’t have been possible without their generous support. If you’re looking to manufacture professional-grade PCBs at an affordable price, I highly recommend checking them out.
+
+🔗 [Visit PCBWay →](https://www.pcbway.com/)
 
 ---
 
