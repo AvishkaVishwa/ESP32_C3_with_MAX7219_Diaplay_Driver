@@ -6,12 +6,6 @@
   <img src="/assest/final.jpg" width="620" alt="Clock demo"/>
 </p>
 
-<div align="center">
-  <a href="https://github.com/AvishkaVishwa/esp32-c3-clock/actions/workflows/build.yml"><img alt="CI" src="https://github.com/AvishkaVishwa/esp32-c3-clock/actions/workflows/build.yml/badge.svg"></a>
-  <img alt="Platform" src="https://img.shields.io/badge/ESP32‑WROOM‑32-blue">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
-</div>
-
 ---
 
 ## ✨ Highlights
