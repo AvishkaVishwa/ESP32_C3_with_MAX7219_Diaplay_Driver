@@ -29,7 +29,7 @@ I did this project to Improve my skills and knowledge in PCB designing and IOT d
 Prototype🙌 
 -For the Prototype I used a ESP32 C3 Super Mini Board 
 
-| <img src="/assest/Prototype1.jpg" width="260"> | <img src="/assest/prototype2.jpg" width="260"> |
+ <img src="/assest/Prototype1.jpg" width="260">  <img src="/assest/prototype2.jpg" width="260">  <img src="/assest/Prototype.jpg" width="260"> 
 
 | Web UI                                    | PCB 3‑D                                 | Copper                                  |
 | ----------------------------------------- | --------------------------------------- | ------------------------------------------- |
