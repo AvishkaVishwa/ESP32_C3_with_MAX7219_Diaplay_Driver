@@ -1,9 +1,9 @@
 # ⏰ ESP32‑Powered Smart Clock
 
-> Elegant Wi‑Fi digital clock with MAX7219 6‑digit display, buzzer alarm, and full web control. 
+> Elegant Wi‑Fi digital clock with MAX7219 4‑digit display, buzzer alarm, and full web control. 
 
-This project is a Wi-Fi-enabled digital clock built around an ESP32 module that drives a four-digit MAX7219 7-segment display to show real-time hours, minutes, and seconds. A responsive web interface served by the microcontroller lets you set the time, alarms, countdowns, timezone, and home-network credentials, while a buzzer and physical button provide audible alerts and quick dismissal. Running in dual AP/STA mode, the clock creates its own setup hotspot, reconnects to your home Wi-Fi for hourly SNTP synchronization, and stores all settings in NVS for stand-alone, always-accurate operation.
-I did this project to Improve my skills and knowledge in PCB designing and IOT developments.
+>This project is a Wi-Fi-enabled digital clock built around an ESP32 module that drives a four-digit MAX7219 7-segment display to show real-time hours, minutes, and seconds. A responsive web interface served by the microcontroller lets you set the time, alarms, countdowns, timezone, and home-network credentials, while a buzzer and physical button provide audible alerts and quick dismissal. Running in dual AP/STA mode, the clock creates its own setup hotspot, reconnects to your home Wi-Fi for hourly SNTP synchronization, and stores all settings in NVS for stand-alone, always-accurate operation.
+>I did this project to Improve my skills and knowledge in PCB designing and IOT developments.
 
 <p align="center">
   <img src="/assest/final.jpg" width="620" alt="Clock demo"/>
@@ -15,7 +15,7 @@ I did this project to Improve my skills and knowledge in PCB designing and IOT d
 
 |                       |                                                                  |
 | --------------------- | ---------------------------------------------------------------- |
-| **Real‑time display** | Bright 6‑digit 7‑segment driven by MAX7219 (HH\:MM\:SS)          |
+| **Real‑time display** | Bright 4‑digit 7‑segment driven by MAX7219 (HH\:MM\:SS)          |
 | **Responsive web UI** | Set time, alarms, countdown & Wi‑Fi from any browser             |
 | **Buzzer & button**   | Loud alarm + physical dismiss (GPIO 0)                           |
 | **Dual‑mode Wi‑Fi**   | AP for local control (`Clock` SSID) + STA for internet time sync |
