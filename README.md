@@ -127,7 +127,7 @@ Even typo fixes are welcome!
 
 ## 🎉 Special Thanks to PCBWay
 
- <img src="/assest/1.jpg" width="260">
+ <img src="/assest/1.jpg" width="260"> | <img src="/assest/2.jpg" width="260">
 
 <p align="center">
   <a href="https://www.pcbway.com/" target="_blank">
