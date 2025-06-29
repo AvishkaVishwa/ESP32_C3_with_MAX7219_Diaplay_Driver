@@ -2,6 +2,7 @@
 
 > Elegant Wi‑Fi digital clock with MAX7219 6‑digit display, buzzer alarm, and full web control. 
 
+This project is a Wi-Fi-enabled digital clock built around an ESP32 module that drives a four-digit MAX7219 7-segment display to show real-time hours, minutes, and seconds. A responsive web interface served by the microcontroller lets you set the time, alarms, countdowns, timezone, and home-network credentials, while a buzzer and physical button provide audible alerts and quick dismissal. Running in dual AP/STA mode, the clock creates its own setup hotspot, reconnects to your home Wi-Fi for hourly SNTP synchronization, and stores all settings in NVS for stand-alone, always-accurate operation.
 I did this project to Improve my skills and knowledge in PCB designing and IOT developments.
 
 <p align="center">
