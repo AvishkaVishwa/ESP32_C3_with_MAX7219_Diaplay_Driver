@@ -32,6 +32,8 @@ More in [**/assets**](assets) & [**/hardware**](hardware).
 <video src ="https://github.com/user-attachments/assets/0d8d9107-081a-4ae7-bd47-be3cfd9f0423"></video>
 
 
+<video src ="https://github.com/user-attachments/assets/e7d40686-c1fc-4405-965b-9b872882c82c"></video>
+
 
 ---
 
