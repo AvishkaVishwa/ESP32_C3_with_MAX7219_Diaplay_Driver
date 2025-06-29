@@ -121,7 +121,7 @@ First boot ➡ creates open AP `Clock` (pwd **clockpass**). Browse to **[http:/
 
 
 <div align="center">
-  <img src="/assest/1.jpg" width="260">  | <img src="/assest/2.jpg" width="260"> 
+  <img src="/assest/1.jpg" width="260">   <img src="/assest/2.jpg" width="260"> 
 </div>
 
 <p align="center">
