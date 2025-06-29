@@ -26,7 +26,7 @@
 | Web UI                                    | PCB 3‑D                                 | Copper                                  |
 | ----------------------------------------- | --------------------------------------- | ------------------------------------------- |
 | <img src="assets/web-ui.png" width="260"> | <img src="/Hardware/3d3.png" width="260"> | <img src="/Hardware/B_CU.png" width="260"> |
-
+                                                                                        | <img src="/Hardware/zone.png" width="260"> |
 More in [**/assets**](assets) & [**/hardware**](hardware).
 
 ---
