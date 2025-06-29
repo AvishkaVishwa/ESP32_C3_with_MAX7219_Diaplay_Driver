@@ -3,7 +3,7 @@
 > Elegant Wi‑Fi digital clock with MAX7219 6‑digit display, buzzer alarm, and full web control.
 
 <p align="center">
-  <img src="assets/hero.gif" width="620" alt="Clock demo"/>
+  <img src="" width="620" alt="Clock demo"/>
 </p>
 
 <div align="center">
@@ -126,6 +126,8 @@ Even typo fixes are welcome!
 ---
 
 ## 🎉 Special Thanks to PCBWay
+
+ <img src="/assest/1.jpg" width="260">
 
 <p align="center">
   <a href="https://www.pcbway.com/" target="_blank">
