@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clock Settings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f0f0f0; margin: 20px; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h2 { color: #333; }
+        label { display: block; margin-top: 10px; color: #555; }
+        input[type="text"], input[type="password"], input[type="time"], select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="submit"] {
+            width: 100%;
+            background-color: #4CAF50;
+            color: white;
+            padding: 14px 20px;
+            margin-top: 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        input[type="submit"]:hover { background-color: #45a049; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>ESP32 Clock Configuration</h2>
+        <form action="/settings" method="post" accept-charset="UTF-8">
+            <label for="ssid">WiFi SSID:</label>
+            <input type="text" id="ssid" name="ssid" maxlength="31" required>
+
+            <label for="password">WiFi Password:</label>
+            <input type="password" id="password" name="password" maxlength="63">
+
+            <label for="time">Set Time (HH:MM):</label>
+            <input type="time" id="time" name="time">
+
+            <label for="timezone">Timezone:</label>
+            <select id="timezone" name="timezone">
+                <option value="UTC+0">UTC</option>
+                <option value="IST-5:30" selected>Sri Lanka (IST, UTC+5:30)</option>
+                <option value="PST+8">PST (UTC-8)</option>
+                <option value="EST+5">EST (UTC-5)</option>
+                <!-- Add more timezones as needed -->
+            </select>
+
+            <input type="submit" value="Save and Restart">
+        </form>
+    </div>
+</body>
+</html>
